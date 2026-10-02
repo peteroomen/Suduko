@@ -1,3 +1,4 @@
+import { createQuestUI } from './quest-ui.js';
 import {
   createPuzzle
 }
@@ -48,6 +49,14 @@ const icons={
 ;
 const icon=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[k]||icons.pencil}</svg>`;
 const game=()=>state.games.find(g=>g.id===state.active[size]);
+const questUI=createQuestUI({
+  getRun:()=>state.quest,setRun:run=>{state.quest=run},save:()=>persist(),render:()=>render(),sound,
+  confirmRestart:start=>showDialog('Start a fresh adventure?', '<p>This ends your current Pencil Quest run. Your Classic and Super pages stay saved.</p>',[
+    {text:'Keep this run',action:closeDialog},
+    {text:'Start over',primary:true,action:()=>{closeDialog();start()}}
+  ])
+});
+
 function persist(immediate=true){
   if(!immediate){
     clearTimeout(saveTimer);
@@ -77,7 +86,7 @@ function settingsApply(){
   document.documentElement.classList.toggle('reduced',state.settings.reducedMotion);
   document.querySelector('meta[name=theme-color]')?.setAttribute('content',dark?'#28232d':'#f6f2e9');
   audio.setSettings(state.settings);
-  if(activeTimer())audio.resume();
+  if(activeTimer()||page==='quest'&&state.quest?.phase==='battle'&&!document.hidden&&!root.querySelector('dialog[open]'))audio.resume();
   else audio.suspend()
 }
 function activeTimer(){
@@ -390,7 +399,7 @@ function settingsHTML(){
 function render(){
   const active=document.activeElement;
   let restore;
-  for(const attr of ['data-cell','data-value','data-action','data-setting','id'])if(active?.hasAttribute(attr)&&root.contains(active)&&!active.closest('dialog')){
+  for(const attr of ['data-qcell','data-qvalue','data-quest','data-cell','data-value','data-action','data-setting','id'])if(active?.hasAttribute(attr)&&root.contains(active)&&!active.closest('dialog')){
     restore=[attr,active.getAttribute(attr)];
     break
   }
@@ -400,7 +409,7 @@ function render(){
     oldDialog.close();
     oldDialog.remove()
   }
-  root.innerHTML=`<div class="app"><header class="top"><div><h1 class="brand">paper sudoku<span>.</span></h1><small class="tagline">A LITTLE SPACE TO THINK</small></div><button class="round" data-action="sound" aria-label="${state.settings.sound?'Turn writing sounds off':'Turn writing sounds on'}" aria-pressed="${state.settings.sound}">${icon(state.settings.sound?'sound':'mute')}</button></header><div class="modes" aria-label="Puzzle size"><button data-mode="9" aria-pressed="${size===9}"><span>Classic · 9 × 9</span></button><button data-mode="16" aria-pressed="${size===16}"><span>Super · 16 × 16</span></button></div><main class="main" id="main">${({play:playHTML,daily:dailyHTML,journal:journalHTML,settings:settingsHTML})[page]()}</main><nav class="footer" aria-label="Main navigation">${[['play','pencil','Play'],['daily','calendar','Daily'],['journal','book','Journal'],['settings','settings','Settings']].map(([p,i,label])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}>${icon(i)}${label}</button>`).join('')}</nav></div>`;
+  root.innerHTML=`<div class="app"><header class="top"><div><h1 class="brand">paper sudoku<span>.</span></h1><small class="tagline">A LITTLE SPACE TO THINK</small></div><button class="round" data-action="sound" aria-label="${state.settings.sound?'Turn writing sounds off':'Turn writing sounds on'}" aria-pressed="${state.settings.sound}">${icon(state.settings.sound?'sound':'mute')}</button></header><div class="modes" aria-label="Puzzle size" ${page==='quest'?'hidden':''}><button data-mode="9" aria-pressed="${size===9}"><span>Classic · 9 × 9</span></button><button data-mode="16" aria-pressed="${size===16}"><span>Super · 16 × 16</span></button></div><main class="main" id="main">${({play:playHTML,quest:()=>questUI.html(),daily:dailyHTML,journal:journalHTML,settings:settingsHTML})[page]()}</main><nav class="footer" aria-label="Main navigation">${[['play','pencil','Play'],['quest','hint','Quest'],['daily','calendar','Daily'],['journal','book','Journal'],['settings','settings','Settings']].map(([p,i,label])=>`<button data-page="${p}" ${page===p?'aria-current="page"':''}>${icon(i)}${label}</button>`).join('')}</nav></div>`;
   if(oldDialog){
     root.append(oldDialog);
     if(open&&!oldDialog.open)oldDialog.showModal()
@@ -544,7 +553,7 @@ const actions={
     persist();
     render()
   }
-  ,export:()=>exportBackup(),recovery:()=>exportBackup(true),import:()=>root.querySelector('#backup-file').click(),clear:()=>showDialog('Clear every saved page?', '<p>This removes all puzzles, history, journey progress, and settings from this device. Export a backup first to keep a copy.</p>',[{
+  ,export:()=>exportBackup(),recovery:()=>exportBackup(true),import:()=>root.querySelector('#backup-file').click(),clear:()=>showDialog('Clear every saved page?', '<p>This removes all puzzles, history, journey progress, the Quest run, and settings from this device. Export a backup first to keep a copy.</p>',[{
     text:'Keep my pages',action:closeDialog
   }
   ,{
@@ -552,14 +561,14 @@ const actions={
       state=freshState();resetRecovery();saveError=null;persist();closeDialog();page='play';message='';render()
     }
   }
-  ]),install,help:()=>showDialog('A little guide.',`<p>Fill each row, column, and box with every symbol once. Classic uses 1–9; Super uses 1–9 and A–G.</p><p>Tap an open square, then a number. Turn Notes on for pencil marks. Remaining counts show how many copies of each symbol are still unwritten.</p><p>Hints explain a logical step before you apply it. Asking for a hint marks the page assisted. There are no lives or penalties.</p><p>Keyboard: arrow keys move, 1–9 / A–G write, N toggles notes, Delete erases. Ctrl or Cmd + Z undoes; add Shift to redo. Escape pauses.</p><p>In Super mode, Overview shows the whole board. Tap a square to open its focus section, or use the corner buttons to navigate.</p>`,[{
+  ]),install,help:()=>showDialog('A little guide.',`<p>Fill each row, column, and box with every symbol once. Classic uses 1–9; Super uses 1–9 and A–G.</p><p>Tap an open square, then a number. Turn Notes on for pencil marks. Remaining counts show how many copies of each symbol are still unwritten.</p><p>Hints explain a logical step before you apply it. Asking for a hint marks the page assisted. Classic and Super have no lives or penalties. Quest is a separate adventure with hearts, ink creatures and upgrades; its rules are inside the Quest tab.</p><p>Keyboard: arrow keys move, 1–9 / A–G write, N toggles notes, Delete erases. Ctrl or Cmd + Z undoes; add Shift to redo. Escape pauses.</p><p>In Super mode, Overview shows the whole board. Tap a square to open its focus section, or use the corner buttons to navigate.</p>`,[{
     text:'Back to my page',primary:true,action:closeDialog
   }
   ])
 }
 ;
 root.addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b||b.disabled||b.closest('dialog'))return;audio.unlock();if(b.dataset.mode){
+  const b=e.target.closest('button');if(!b||b.disabled||b.closest('dialog'))return;audio.unlock();if(page==='quest'&&questUI.click(b))return;if(b.dataset.mode){
     if(busy)return;size=Number(b.dataset.mode);state.lastMode=size;persist();paused=!!game()?.paused;autoPaused=false;noteMode=false;hint=null;message='';const g=game();quadrant=g?Math.floor(Math.floor(g.selected/size)/8)*2+Math.floor(g.selected%size/8):0;render()
   }
   else if(b.dataset.page){
@@ -603,7 +612,7 @@ root.addEventListener('input',e=>{
 }
 );
 document.addEventListener('keydown',e=>{
-  audio.unlock();if(page!=='play'||busy||root.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;const g=game();if(!g)return;const key=e.key.toUpperCase();if((e.ctrlKey||e.metaKey)&&key==='Z'){
+  audio.unlock();if(page==='quest'&&!root.querySelector('dialog[open]')&&!['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)){questUI.key(e);return}if(page!=='play'||busy||root.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;const g=game();if(!g)return;const key=e.key.toUpperCase();if((e.ctrlKey||e.metaKey)&&key==='Z'){
     e.preventDefault();historyMove(e.shiftKey?'redo':'undo');return
   }
   if(e.ctrlKey||e.metaKey||e.altKey)return;if(key==='ESCAPE'){
