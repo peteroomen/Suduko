@@ -1,3 +1,4 @@
+import { validQuest } from './quest.js';
 export const STORAGE_KEY = 'paper-sudoku-v1';
 export const defaults = {
   theme:'auto',sound:false,ambience:'off',sfxVolume:.6,ambienceVolume:.3,timer:true,conflicts:true,cleanup:true,haptics:false,reducedMotion:false
@@ -5,7 +6,7 @@ export const defaults = {
 ;
 export function freshState(){
   return {
-    version:1,settings:{
+    version:1,quest:null,settings:{
       ...defaults
     }
     ,active:{
@@ -50,6 +51,7 @@ function solvedGrid(a,n){
 }
 export function validateState(data){
    if(!data||data.version!==1||!Array.isArray(data.games)||data.games.length>1000||!data.settings||!data.active||!data.journey)fail();
+   if(!validQuest(data.quest))fail();
    if(data.lastMode===undefined)data.lastMode=9;
   if(![9,16].includes(data.lastMode))fail();
    const s=data.settings;

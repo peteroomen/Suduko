@@ -6,6 +6,7 @@ A quiet, paper-inspired Sudoku application for 9×9 and 16×16 puzzles. The appl
 
 - Classic 9×9 and Super 16×16, each with Beginner, Easy, Medium, Hard, and Expert puzzles.
 - Daily puzzles, an earlier-date archive, and a progressive journey for each board size.
+- Pencil Quest: a five-encounter roguelike using classic Sudoku, with ink creatures, hearts, starred squares, six upgrades, and optional risk/recovery paths. [Design and balance report](docs/pencil-quest.md).
 - Pencil notes, undo/redo, optional conflict highlighting, and explained logical hints.
 - A journal for saved and finished pages, with completion statistics, times, and daily streaks.
 - Light, dark, and automatic themes; timer, motion, sound, ambience, and haptic settings.
@@ -49,6 +50,8 @@ Visit the built app once online over HTTPS (or localhost) and allow its offline 
 Each build gets a content-versioned cache. An update waits until all tabs using the previous version are closed; it never forces an active puzzle to reload. Close the app's tabs and reopen to use an available update. Browser storage eviction or clearing site data removes offline files and local saves.
 
 ## Saves and backups
+
+Pencil Quest saves one current or most recent run separately from the ordinary journal. Its progress is included in backups; old backups without Quest remain valid.
 
 Progress and preferences stay in local browser storage on the device and browser where you play. They do not sync across devices or deployment domains. Use the app's backup export/import controls to retain a portable copy before clearing browser data or changing domains. Private browsing and blocked storage can prevent durable saves. Keep an exported backup somewhere you can find again.
 
